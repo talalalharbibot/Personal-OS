@@ -1,0 +1,7 @@
+{
+  "name": "نظام (Nizam) - Personal OS",
+  "description": "A local-first Personal Operating System for managing life tasks, projects, and habits with an RTL Arabic interface and FSM-driven workflow.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
