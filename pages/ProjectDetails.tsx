@@ -13,6 +13,7 @@ import { QuickCaptureModal } from '../components/QuickCaptureModal';
 import { CreateProjectModal } from '../components/CreateProjectModal';
 import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
 import { RescheduleModal } from '../components/RescheduleModal';
+import { syncService } from '../services/syncService';
 
 export const ProjectDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,15 +36,14 @@ export const ProjectDetails: React.FC = () => {
   const [changeSignal, setChangeSignal] = useState(0);
   const forceUpdate = () => setChangeSignal(c => c + 1);
 
-  // Listen for global update events (from Quick Capture Modal)
   useEffect(() => {
     const handleUpdate = () => forceUpdate();
     window.addEventListener('pos-update', handleUpdate);
     return () => window.removeEventListener('pos-update', handleUpdate);
   }, []);
 
-  // Broad observation for tasks with forced refresh signal
-  const allTasks = useLiveQuery(() => db.tasks.toArray(), [changeSignal]);
+  // Filter out deleted items
+  const allTasks = useLiveQuery(() => db.tasks.filter(t => !t.deletedAt).toArray(), [changeSignal]);
   const project = useLiveQuery(() => db.projects.get(projectId), [projectId, changeSignal]);
 
   // Filter and Sort
@@ -78,25 +78,28 @@ export const ProjectDetails: React.FC = () => {
     });
   }, [allTasks, projectId]);
 
-  if (!project) return null;
+  if (!project || project.deletedAt) return null;
 
   const completedTasks = tasks.filter(t => t.status === TaskStatus.Completed).length;
   const totalTasks = tasks.length;
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   const handleDeleteProject = async () => {
+      // Bulk Soft Delete Logic for Project (SyncService will pick this up for hard delete)
       await (db as any).transaction('rw', db.projects, db.tasks, async () => {
-          await db.tasks.where('projectId').equals(projectId).delete();
-          await db.projects.delete(projectId);
+          await db.tasks.where('projectId').equals(projectId).modify({ deletedAt: new Date(), syncedAt: 0 });
+          await db.projects.update(projectId, { deletedAt: new Date(), syncedAt: 0 });
       });
       toast.success('تم حذف المشروع');
+      syncService.triggerSync();
       navigate('/organizer');
   };
 
   const handleDeleteTask = async () => {
       if (!taskToDelete || !taskToDelete.id) return;
       try {
-          await db.tasks.delete(taskToDelete.id);
+          // Use deleteRecord for Hard Delete
+          await syncService.deleteRecord('tasks', taskToDelete.id);
           toast.success('تم حذف المهمة');
           setTaskToDelete(null);
           forceUpdate();
@@ -109,7 +112,6 @@ export const ProjectDetails: React.FC = () => {
     setTaskToEdit(task);
   };
   
-  // Handler for Accordion Toggle
   const handleTaskToggle = (id: number) => {
     setExpandedTaskId(prevId => prevId === id ? null : id);
   };

@@ -1,5 +1,4 @@
 
-
 export enum TaskStatus {
   Captured = 'captured',
   Clarified = 'clarified',
@@ -25,14 +24,19 @@ export enum TaskEffort {
 
 export interface Project {
   id?: number;
+  uuid?: string; // Sync ID
   title: string;
   goal?: string;
   color: string;
   createdAt: Date;
+  updatedAt?: Date;
+  syncedAt?: number; // 0 if dirty, timestamp if synced
+  deletedAt?: Date;
 }
 
 export interface Task {
   id?: number;
+  uuid?: string; // Sync ID
   title: string;
   description?: string;
   status: TaskStatus;
@@ -45,32 +49,52 @@ export interface Task {
   rolloverCount: number;
   createdAt: Date;
   completedAt?: Date;
-  type?: 'task' | 'appointment' | 'meeting'; // Added to distinguish specific types
+  type?: 'task' | 'appointment' | 'meeting'; 
+  
+  // New Reminder Fields
+  reminderMinutes?: number; 
+  isReminded?: boolean;
+
+  // Sync Fields
+  updatedAt?: Date;
+  syncedAt?: number; // 0 if dirty, timestamp if synced
+  deletedAt?: Date;
 }
 
 export interface Habit {
   id?: number;
+  uuid?: string;
   title: string;
   frequency: 'daily' | 'weekdays' | 'custom';
   streakCount: number;
   lastCompletedDate?: Date;
   createdAt: Date;
+  updatedAt?: Date;
+  syncedAt?: number;
+  deletedAt?: Date;
 }
 
 export interface Attachment {
   name: string;
   type: string; // mime type
-  data: Blob;
   size: number;
+  path?: string; // Cloud Storage Path (The Source of Truth)
+  data?: Blob;   // Optional local cache (Legacy)
 }
 
 export interface Idea {
   id?: number;
+  uuid?: string;
   content: string;
   isAudio: boolean;
   audioBlob?: Blob;
-  attachment?: Attachment; // New field for file attachments
+  attachment?: Attachment;
   createdAt: Date;
-  type?: 'idea' | 'note'; // Added to distinguish specific types
-  linkedTaskId?: number; // Optional link to a parent task/appointment/meeting
+  type?: 'idea' | 'note'; 
+  linkedTaskId?: number;
+  
+  // Sync Fields
+  updatedAt?: Date;
+  syncedAt?: number; // 0 if dirty, timestamp if synced
+  deletedAt?: Date;
 }

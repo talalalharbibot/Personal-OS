@@ -39,14 +39,17 @@ export const MoreMenu: React.FC<MoreMenuProps> = ({ onClose }) => {
                 <span className="font-bold text-primary-900 dark:text-primary-100">وضع التركيز</span>
             </NavLink>
 
-            {/* Statistics (Placeholder) */}
-            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 opacity-60 cursor-not-allowed">
-                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center text-gray-500">
+            {/* Statistics */}
+            <NavLink
+                to="/statistics"
+                onClick={onClose}
+                className="bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-700/50 p-4 rounded-2xl flex flex-col items-center justify-center gap-2 group hover:scale-[1.02] transition-transform shadow-sm"
+            >
+                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-800 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300">
                     <PieChart size={24} />
                 </div>
-                <span className="font-bold text-gray-500">الإحصائيات</span>
-                <span className="text-[10px] text-gray-400">قريباً</span>
-            </div>
+                <span className="font-bold text-indigo-900 dark:text-indigo-100">الإحصائيات</span>
+            </NavLink>
         </div>
 
         <div className="space-y-2">
@@ -67,23 +70,39 @@ export const MoreMenu: React.FC<MoreMenuProps> = ({ onClose }) => {
                 </div>
             </NavLink>
 
-            <button className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-right cursor-not-allowed opacity-60">
+            <NavLink 
+                to="/help"
+                onClick={onClose}
+                className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
                 <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300">
                     <HelpCircle size={20} />
                 </div>
                 <div className="flex-1">
                     <h4 className="font-bold text-gray-800 dark:text-gray-200">المساعدة والدعم</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">الأسئلة الشائعة، تواصل معنا</p>
                 </div>
-            </button>
+                <div className="text-gray-400">
+                    <Settings size={16} className="rotate-90" />
+                </div>
+            </NavLink>
 
-            <button className="w-full flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-right cursor-not-allowed opacity-60">
+            <NavLink 
+                to="/about"
+                onClick={onClose}
+                className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
                 <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-300">
                     <Info size={20} />
                 </div>
                 <div className="flex-1">
                     <h4 className="font-bold text-gray-800 dark:text-gray-200">عن التطبيق</h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">الإصدار، المميزات، المطور</p>
                 </div>
-            </button>
+                <div className="text-gray-400">
+                    <Settings size={16} className="rotate-90" />
+                </div>
+            </NavLink>
         </div>
       </div>
     </div>

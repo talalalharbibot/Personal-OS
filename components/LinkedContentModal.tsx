@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { FilePreviewModal } from './FilePreviewModal';
 import { QuickCaptureModal } from './QuickCaptureModal';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { syncService } from '../services/syncService';
 
 interface Props {
   parentTaskId: number;
@@ -16,16 +17,18 @@ interface Props {
 }
 
 // Sub-component for individual Linked Idea Items
-const LinkedIdeaItem = ({ 
+interface LinkedIdeaItemProps {
+    idea: Idea;
+    onEdit: (i: Idea) => void;
+    onDelete: (i: Idea) => void;
+    onPreview: (a: Attachment) => void;
+}
+
+const LinkedIdeaItem: React.FC<LinkedIdeaItemProps> = ({ 
     idea, 
     onEdit, 
     onDelete, 
     onPreview 
-}: { 
-    idea: Idea, 
-    onEdit: (i: Idea) => void, 
-    onDelete: (i: Idea) => void, 
-    onPreview: (a: Attachment) => void 
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isIdea = idea.type === 'idea';
@@ -134,8 +137,9 @@ export const LinkedContentModal: React.FC<Props> = ({ parentTaskId, parentTitle,
     return () => window.removeEventListener('pos-update', handleUpdate);
   }, []);
 
+  // Filter Deleted
   const ideas = useLiveQuery(() => 
-    db.ideas.where('linkedTaskId').equals(parentTaskId).toArray()
+    db.ideas.where('linkedTaskId').equals(parentTaskId).filter(i => !i.deletedAt).toArray()
   , [parentTaskId, changeSignal]);
 
   // Auto-close if the list becomes empty (e.g. after moving/deleting all notes)
@@ -148,7 +152,8 @@ export const LinkedContentModal: React.FC<Props> = ({ parentTaskId, parentTitle,
   const confirmDelete = async () => {
       if (!ideaToDelete || !ideaToDelete.id) return;
       try {
-          await db.ideas.delete(ideaToDelete.id);
+          // Use deleteRecord for Hard Delete
+          await syncService.deleteRecord('ideas', ideaToDelete.id);
           toast.success('تم الحذف');
           window.dispatchEvent(new Event('pos-update')); // Force global update for counters
           setIdeaToDelete(null);

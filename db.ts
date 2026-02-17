@@ -1,73 +1,76 @@
+
 import Dexie, { Table } from 'dexie';
-import { Task, Project, Habit, Idea, TaskStatus } from './types';
+import { Task, Project, Habit, Idea } from './types';
+
+// Helper to generate UUID
+export function generateUUID() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+export interface MetadataRecord {
+  id?: number;
+  tableName: string;
+  key: string; // 'cursor', etc.
+  value: any;
+}
+
+// --- Hooks Implementation ---
+export function addSyncHooks(table: Table<any, any>, dbInstance: POSDatabase) {
+  table.hook('creating', (primKey, obj) => {
+    if (dbInstance.isPulling) return; // SKIP if pulling from remote
+
+    // 1. Ensure basic fields
+    obj.updatedAt = new Date();
+    obj.syncedAt = 0; // Mark as dirty
+    if (!obj.uuid) obj.uuid = generateUUID();
+  });
+
+  table.hook('updating', (mods: any, primKey, obj) => {
+    if (dbInstance.isPulling) return; // SKIP if pulling from remote
+
+    // If update is NOT from SyncService (i.e. does not contain syncedAt), mark as dirty
+    if (!Object.prototype.hasOwnProperty.call(mods, 'syncedAt')) {
+        return { updatedAt: new Date(), syncedAt: 0 };
+    }
+  });
+}
 
 export class POSDatabase extends Dexie {
   tasks!: Table<Task, number>;
   projects!: Table<Project, number>;
   habits!: Table<Habit, number>;
   ideas!: Table<Idea, number>;
+  metadata!: Table<MetadataRecord, number>;
+
+  // Flag to prevent recursive sync loops
+  public isPulling = false;
 
   constructor() {
     super('NizamPOS');
-    (this as any).version(1).stores({
-      tasks: '++id, title, status, priority, executionDate, projectId, rolloverCount, type',
-      projects: '++id, title',
-      habits: '++id, title, lastCompletedDate',
-      ideas: '++id, createdAt, linkedTaskId'
+    
+    // Schema definition
+    (this as any).version(6).stores({
+      tasks: '++id, uuid, status, executionDate, projectId, syncedAt, updatedAt, deletedAt',
+      projects: '++id, uuid, title, syncedAt, updatedAt, deletedAt',
+      habits: '++id, uuid, title, lastCompletedDate, syncedAt, updatedAt, deletedAt',
+      ideas: '++id, uuid, createdAt, linkedTaskId, syncedAt, updatedAt, deletedAt',
+      metadata: '++id, [tableName+key]'
     });
+
+    this.applyHooks();
+  }
+
+  applyHooks() {
+    // Pass 'this' to hooks to access isPulling
+    const tables = [this.tasks, this.projects, this.habits, this.ideas];
+    tables.forEach(table => addSyncHooks(table, this));
   }
 }
 
 export const db = new POSDatabase();
-
-// Helper to seed some initial data if empty
-export const seedDatabase = async () => {
-  const taskCount = await db.tasks.count();
-  if (taskCount === 0) {
-    await db.projects.bulkAdd([
-      { title: 'مشروع العمل', color: '#3b82f6', createdAt: new Date() },
-      { title: 'الصحة والرياضة', color: '#10b981', createdAt: new Date() },
-      { title: 'تطوير الذات', color: '#f59e0b', createdAt: new Date() },
-    ]);
-    
-    await db.tasks.bulkAdd([
-      {
-        title: 'مراجعة خطة المشروع',
-        status: TaskStatus.Active,
-        priority: 3,
-        effort: 2,
-        executionDate: new Date(),
-        rolloverCount: 0,
-        createdAt: new Date(),
-        type: 'task'
-      },
-      {
-        title: 'شراء مستلزمات المنزل',
-        status: TaskStatus.Active,
-        priority: 2,
-        effort: 1,
-        executionDate: new Date(),
-        rolloverCount: 0,
-        createdAt: new Date(),
-        type: 'task'
-      },
-      {
-        title: 'قراءة كتاب لمدة 30 دقيقة',
-        status: TaskStatus.Scheduled,
-        priority: 1,
-        effort: 2,
-        executionDate: new Date(new Date().setDate(new Date().getDate() + 1)), // Tomorrow
-        rolloverCount: 0,
-        createdAt: new Date(),
-        type: 'task'
-      }
-    ]);
-
-    await db.habits.add({
-      title: 'شرب 3 لتر ماء',
-      frequency: 'daily',
-      streakCount: 5,
-      createdAt: new Date()
-    });
-  }
-};

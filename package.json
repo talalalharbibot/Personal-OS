@@ -19,7 +19,10 @@
     "react-confetti": "6.1.0",
     "dexie-react-hooks": "1.1.7",
     "dexie": "3.2.7",
-    "react-use": "17.5.0"
+    "react-use": "17.5.0",
+    "mammoth": "1.6.0",
+    "pdfjs-dist": "3.11.174",
+    "@supabase/supabase-js": "2.43.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

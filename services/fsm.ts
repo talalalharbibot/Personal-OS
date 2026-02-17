@@ -55,6 +55,9 @@ export class TaskFSM {
     const task = await db.tasks.get(taskId);
     if (!task) throw new Error('المهمة غير موجودة');
 
+    // Fix: Idempotency check to prevent errors on double-click or redundant transitions
+    if (task.status === to) return;
+
     const allowed = await this.canTransition(task, to);
     if (!allowed) {
       // Changed from console.warn to throw so the UI stops execution

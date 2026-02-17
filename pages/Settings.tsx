@@ -1,11 +1,10 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Moon, Sun, Database, Info, Shield, Bell, BellRing, ChevronLeft, Trash2, Check, Lock, RefreshCw, Volume2, VolumeX, Clock, Coffee } from 'lucide-react';
+import { ArrowRight, Moon, Sun, Trash2, Bell, BellRing, Volume2, VolumeX, Clock, Coffee, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { db } from '../db';
 import { getScheduleSettings, saveScheduleSettings } from '../services/scheduling';
+import { syncService } from '../services/syncService';
 
 export const Settings: React.FC = () => {
   const navigate = useNavigate();
@@ -162,6 +161,8 @@ export const Settings: React.FC = () => {
 
   const handleClearData = async () => {
     if (confirm('هل أنت متأكد؟ سيتم حذف جميع البيانات والمهام نهائياً!')) {
+      syncService.stopAutoSync();
+      (db as any).close(); // Close before deleting
       await (db as any).delete();
       await (db as any).open();
       window.location.reload();
@@ -195,8 +196,6 @@ export const Settings: React.FC = () => {
         <section>
             <h3 className="text-sm font-bold text-gray-500 mb-3 px-1">عام</h3>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                
-                {/* Theme Toggle */}
                 <div 
                     onClick={toggleTheme}
                     className="p-4 flex items-center justify-between border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
@@ -220,8 +219,6 @@ export const Settings: React.FC = () => {
         <section>
             <h3 className="text-sm font-bold text-gray-500 mb-3 px-1">الجدولة والوقت</h3>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                
-                {/* Work Hours Toggle */}
                 <div className="p-4 border-b dark:border-gray-700">
                     <div 
                         className="flex items-center justify-between cursor-pointer mb-3"
@@ -263,7 +260,6 @@ export const Settings: React.FC = () => {
                     )}
                 </div>
 
-                {/* Buffer Time Toggle */}
                 <div className="p-4">
                     <div 
                         className="flex items-center justify-between cursor-pointer mb-3"
@@ -310,8 +306,6 @@ export const Settings: React.FC = () => {
         <section>
             <h3 className="text-sm font-bold text-gray-500 mb-3 px-1">التنبيهات</h3>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                
-                {/* 1. In-App Sounds (Best Alternative) */}
                 <div 
                     onClick={toggleSound}
                     className="p-4 flex items-center justify-between border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
@@ -328,7 +322,6 @@ export const Settings: React.FC = () => {
                     <ToggleSwitch checked={soundEnabled} />
                 </div>
 
-                {/* 2. System Push Notifications */}
                 <div 
                     onClick={toggleSysNotifications}
                     className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
@@ -354,17 +347,8 @@ export const Settings: React.FC = () => {
 
         {/* Section: Data */}
         <section>
-            <h3 className="text-sm font-bold text-gray-500 mb-3 px-1">البيانات والنسخ الاحتياطي</h3>
+            <h3 className="text-sm font-bold text-gray-500 mb-3 px-1">البيانات</h3>
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 flex items-center justify-between border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors opacity-50 cursor-not-allowed">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600 dark:text-emerald-400">
-                            <Database size={20} />
-                        </div>
-                        <span className="font-bold text-gray-800 dark:text-gray-200">تصدير البيانات (JSON)</span>
-                    </div>
-                    <span className="text-xs text-gray-400">قريباً</span>
-                </div>
                 <div 
                     onClick={handleClearData}
                     className="p-4 flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer transition-colors"
@@ -373,7 +357,7 @@ export const Settings: React.FC = () => {
                         <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg text-red-600 dark:text-red-400">
                             <Trash2 size={20} />
                         </div>
-                        <span className="font-bold text-red-600 dark:text-red-400">حذف جميع البيانات</span>
+                        <span className="font-bold text-red-600 dark:text-red-400">حذف جميع البيانات المحلية</span>
                     </div>
                 </div>
             </div>

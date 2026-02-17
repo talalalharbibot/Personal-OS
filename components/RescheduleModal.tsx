@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { X, Calendar, Clock, Save, Type, Flag, Folder } from 'lucide-react';
+import { X, Calendar, Clock, Save, Type, Flag, Folder, Bell } from 'lucide-react';
 import { db } from '../db';
 import { Task, TaskStatus, TaskPriority } from '../types';
 import toast from 'react-hot-toast';
@@ -49,6 +49,7 @@ export const RescheduleModal: React.FC<Props> = ({ task, mode = 'default', onClo
   );
 
   const [duration, setDuration] = useState<number>(task.durationMinutes || 60);
+  const [reminderMinutes, setReminderMinutes] = useState<number>(task.reminderMinutes || 10);
 
   // Conflict State
   const [conflictData, setConflictData] = useState<ConflictResult | null>(null);
@@ -61,12 +62,21 @@ export const RescheduleModal: React.FC<Props> = ({ task, mode = 'default', onClo
   const timeInputRef = useRef<HTMLInputElement>(null);
 
   const durationOptions = [
+      { value: 15, label: '15' },
       { value: 30, label: '30' },
       { value: 60, label: '60' },
       { value: 90, label: '90' },
       { value: 120, label: '120' },
       { value: 180, label: '180' },
       { value: 240, label: '240' },
+  ];
+  
+  const reminderOptions = [
+      { value: 0, label: 'بدون' },
+      { value: 10, label: '10د' },
+      { value: 30, label: '30د' },
+      { value: 60, label: '1س' },
+      { value: 120, label: '2س' },
   ];
 
   const handleSave = async () => {
@@ -139,6 +149,10 @@ export const RescheduleModal: React.FC<Props> = ({ task, mode = 'default', onClo
             executionDate: newExecutionDate,
             scheduledTime: newScheduledTime,
             durationMinutes: duration,
+            reminderMinutes: reminderMinutes,
+            // Reset reminder state if we reschedule!
+            isReminded: false,
+            
             status: newStatus,
             rolloverCount: 0 
         });
@@ -259,23 +273,39 @@ export const RescheduleModal: React.FC<Props> = ({ task, mode = 'default', onClo
                     </div>
                 </div>
 
-                {/* Duration Row */}
-                <div>
-                    <label className="block text-xs text-gray-500 mb-1">المدة المتوقعة (بالدقيقة)</label>
-                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                        {durationOptions.map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setDuration(opt.value)}
-                                className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-bold border transition-colors ${
-                                    duration === opt.value
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 ring-1 ring-indigo-500/20'
-                                    : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                                }`}
+                {/* Reminder & Duration Row */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">تذكير قبل</label>
+                        <div className="relative">
+                            <select 
+                                value={reminderMinutes}
+                                onChange={(e) => setReminderMinutes(Number(e.target.value))}
+                                className="w-full bg-gray-50 dark:bg-gray-900 rounded-lg p-2 pl-10 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 outline-none appearance-none"
                             >
-                                {opt.label}
-                            </button>
-                        ))}
+                                {reminderOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                <Bell size={16} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-xs text-gray-500 mb-1">المدة (بالدقيقة)</label>
+                        <div className="relative">
+                             <select 
+                                value={duration}
+                                onChange={(e) => setDuration(Number(e.target.value))}
+                                className="w-full bg-gray-50 dark:bg-gray-900 rounded-lg p-2 pl-3 text-sm text-gray-900 dark:text-white focus:ring-1 focus:ring-primary-500 outline-none appearance-none"
+                            >
+                                {durationOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
